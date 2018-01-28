@@ -112,8 +112,8 @@ dependencies:
   - sortedcontainers=1.5.7=py36hdf89491_0
   - sqlite=3.20.1=hb898158_2
   - tblib=1.3.2=py36h34cf8b6_0
-  - tensorflow-gpu=1.3.0=0
-  - tensorflow-gpu-base=1.3.0=py36cuda8.0cudnn6.0_1
+  - tensorflow-gpu=1.4.1=0
+  - tensorflow-gpu-base=1.4.1=py36h01caf0a_0
   - tensorflow-tensorboard=0.1.5=py36_0
   - tk=8.6.7=hc745277_3
   - toolz=0.8.2=py36h81f2dff_0
