@@ -26,8 +26,6 @@ dependencies:
   - chardet=3.0.4=py36h0f667ec_1
   - click=6.7=py36h5253387_0
   - cloudpickle=0.5.2=py36h84cdd9c_0
-  - conda=4.4.6=py36_0
-  - conda-env=2.6.0=h36134e3_1
   - cryptography=2.1.4=py36hd09be54_0
   - cudatoolkit=8.0=3
   - cudnn=6.0.21=cuda8.0_0
