@@ -1,7 +1,7 @@
-# IEEE's Signal Processing Society - Camera Model Identification 
+# IEEE's Signal Processing Society - Camera Model Identification
 # https://www.kaggle.com/c/sp-society-camera-model-identification
 #
-# (C) 2018 Andres Torrubia, licensed under GNU General Public License v3.0 
+# (C) 2018 Andres Torrubia, licensed under GNU General Public License v3.0
 # See license.txt
 
 import argparse
@@ -79,7 +79,7 @@ parser.add_argument('-tta', action='store_true', help='Enable test time augmenta
 
 args = parser.parse_args()
 
-TRAIN_FOLDER       = 'train'
+TRAIN_FOLDER       = 'train_all'
 EXTRA_TRAIN_FOLDER = 'flickr_images'
 EXTRA_VAL_FOLDER   = 'val_images'
 TEST_FOLDER        = 'test'
@@ -88,12 +88,12 @@ MODEL_FOLDER       = 'models'
 CROP_SIZE = args.crop_size
 CLASSES = [
     'HTC-1-M7',
-    'iPhone-6',     
+    'iPhone-6',
     'Motorola-Droid-Maxx',
     'Motorola-X',
     'Samsung-Galaxy-S4',
     'iPhone-4s',
-    'LG-Nexus-5x', 
+    'LG-Nexus-5x',
     'Motorola-Nexus-6',
     'Samsung-Galaxy-Note3',
     'Sony-NEX-7']
@@ -121,7 +121,7 @@ RESOLUTIONS = {
     6: [[3024,4032]], # flips
     7: [[1040,780],  # Motorola-Nexus-6 no flips
         [3088,4130], [3120,4160]], # Motorola-Nexus-6 flips
-    8: [[4128,2322]], # no flips 
+    8: [[4128,2322]], # no flips
     9: [[6000,4000]], # no flips
 }
 
@@ -145,8 +145,15 @@ for class_id,resolutions in RESOLUTIONS.copy().items():
 MANIPULATIONS = ['jpg70', 'jpg90', 'gamma0.8', 'gamma1.2', 'bicubic0.5', 'bicubic0.8', 'bicubic1.5', 'bicubic2.0']
 
 N_CLASSES = len(CLASSES)
-load_img_fast_jpg  = lambda img_path: jpeg.JPEG(img_path).decode()
+#load_img_fast_jpg  = lambda img_path: jpeg.JPEG(img_path).decode()
 load_img           = lambda img_path: np.array(Image.open(img_path))
+
+def load_img_fast_jpg(img_path):
+    try:
+        x = jpeg.JPEG(img_path).decode()
+        return x
+    except:
+        return load_img(img_path)
 
 def random_manipulation(img, manipulation=None):
 
@@ -174,7 +181,7 @@ def random_manipulation(img, manipulation=None):
     return im_decoded
 
 def preprocess_image(img):
-    
+
     if args.kernel_filter:
         # see slide 13
         # http://www.lirmm.fr/~chaumont/publications/WIFS-2016_TUAMA_COMBY_CHAUMONT_Camera_Model_Identification_With_CNN_slides.pdf
@@ -183,14 +190,14 @@ def preprocess_image(img):
             [ 2, -6,   8, -6,  2],  \
             [-2,  8, -12,  8, -2],  \
             [ 2, -6,   8, -6,  2],  \
-            [-1,  2,  -2,  2, -1]]) 
+            [-1,  2,  -2,  2, -1]])
 
         return cv2.filter2D(img.astype(np.float32),-1,kernel_filter)
         # kernel filter already puts mean ~0 and roughly scales between [-1..1]
         # no need to preprocess_input further
     else:
         # find `preprocess_input` function specific to the classifier
-        classifier_to_module = { 
+        classifier_to_module = {
             'NASNetLarge'       : 'nasnet',
             'NASNetMobile'      : 'nasnet',
             'DenseNet40'        : 'densenet',
@@ -247,7 +254,7 @@ def process_item(item, training, transforms=[[]]):
     class_name = item.split('/')[-2]
     class_idx = get_class(class_name)
 
-    validation = not training 
+    validation = not training
 
     img = load_img_fast_jpg(item)
 
@@ -282,7 +289,7 @@ def process_item(item, training, transforms=[[]]):
         # some images are landscape, others are portrait, so augment training by randomly changing orientation
         if ((np.random.rand() < 0.5) and training and ORIENTATION_FLIP_ALLOWED[class_idx]) or force_orientation:
             img = np.rot90(_img, 1, (0,1))
-            # is it rot90(..3..), rot90(..1..) or both? 
+            # is it rot90(..3..), rot90(..1..) or both?
             # for phones with landscape mode pics could be taken upside down too, although less likely
             # most of the test images that are flipped are 1
             # however,eg. img_4d7be4c_unalt looks 3
@@ -290,7 +297,7 @@ def process_item(item, training, transforms=[[]]):
         else:
             img = _img
 
-        img = get_crop(img, CROP_SIZE * 2, random_crop=True if training else False) 
+        img = get_crop(img, CROP_SIZE * 2, random_crop=True if training else False)
         # * 2 bc may need to scale by 0.5x and still get a 512px crop
 
         if args.verbose:
@@ -312,7 +319,7 @@ def process_item(item, training, transforms=[[]]):
             print("ap: ", img.shape, item)
 
         if len(transforms) > 1:
-            img_s.append(img)    
+            img_s.append(img)
             manipulated_s.append(manipulated)
             class_idx_s.append(class_idx)
 
@@ -325,7 +332,7 @@ VALIDATION_TRANSFORMS = [ [], ['orientation'], ['manipulation'], ['orientation',
 
 def gen(items, batch_size, training=True):
 
-    validation = not training 
+    validation = not training
 
     # during validation we store the unaltered images on batch_idx and a manip one on batch_idx + batch_size, hence the 2
     valid_batch_factor = 1 # TODO: augment validation
@@ -337,7 +344,7 @@ def gen(items, batch_size, training=True):
 
     # class index
     y = np.empty((batch_size * valid_batch_factor), dtype=np.int64)
-    
+
     p = Pool(cpu_count()-2)
 
     transforms = VALIDATION_TRANSFORMS if validation else [[]]
@@ -419,8 +426,8 @@ def CaCNN(include_top, weights, input_shape, pooling):
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
-        x = GlobalAveragePooling2D(name=preffix+'pooling')(x)  
-        
+        x = GlobalAveragePooling2D(name=preffix+'pooling')(x)
+
         return x
 
     x = img_input
@@ -466,9 +473,9 @@ else:
     classifier = globals()[args.classifier]
 
     classifier_model = classifier(
-        include_top=False, 
+        include_top=False,
         weights = 'imagenet' if args.use_imagenet_weights else None,
-        input_shape=(CROP_SIZE, CROP_SIZE, 3), 
+        input_shape=(CROP_SIZE, CROP_SIZE, 3),
         pooling=args.pooling if args.pooling != 'none' else None)
 
     x = input_image
@@ -512,7 +519,7 @@ model = multi_gpu_model(model, gpus=args.gpus)
 if not (args.test or args.test_train):
 
     # TRAINING
-    ids = glob.glob(join(TRAIN_FOLDER,'*/*.jpg'))
+    ids = glob.glob(join(TRAIN_FOLDER,'*/*.[jJ][pP][gG]'))
     ids.sort()
 
     if not args.extra_dataset:
@@ -554,6 +561,10 @@ if not (args.test or args.test_train):
 
     print("Validation set distribution:")
     print_distribution(ids_val)
+
+    print("len(ids):", len(ids))
+    print("len(ids_train):", len(ids_train))
+    print("len(ids_val):", len(ids_val))
 
     classes_train = [get_class(idx.split('/')[-2]) for idx in ids_train]
     class_weight = class_weight.compute_class_weight('balanced', np.unique(classes_train), classes_train)
